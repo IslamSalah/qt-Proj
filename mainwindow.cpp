@@ -108,7 +108,7 @@ void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
     if(rubberBand->isVisible()) // zoom to specified region
-        zoomToRegion();
+        zoomToRegion(getSelectedRegOnImg());
     else if(scaleFactor < 6){ // normal zoomIn
         //check if the picture is zoomed enough.
         scaleImage(1.25);
@@ -315,16 +315,15 @@ QRect MainWindow::getSelectedRegOnImg()
     return rect;
 }
 
-void MainWindow::zoomToRegion()
+void MainWindow::zoomToRegion(QRect rec)
 {
-    QRect Reg = getSelectedRegOnImg();
     double s;
-    if(Reg.width() > Reg.height()){
+    if(rec.width() > rec.height()){
         s = 1.0*ui->imageArea->width()/this->width();           // scale first the QLabel:imageArea to fit the window
-        s*= 1.0*Reg.width()/ui->imageArea->pixmap()->width();   //then scale the specified region
+        s*= 1.0*rec.width()/ui->imageArea->pixmap()->width();   //then scale the specified region
     }else {
         s = 1.0*ui->imageArea->height()/(this->height()-10);
-        s*= 1.0*Reg.height()/ui->imageArea->pixmap()->height();
+        s*= 1.0*rec.height()/ui->imageArea->pixmap()->height();
     }
 
     if(scaleFactor/s < 7.5)     // can zoom to selected region
@@ -335,8 +334,8 @@ void MainWindow::zoomToRegion()
     scrollArea->horizontalScrollBar()->setValue(scrollArea->horizontalScrollBar()->minimum());
     scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->minimum());
     // scroll to required place
-    scrollArea->horizontalScrollBar()->setValue(Reg.x()*scaleFactor);
-    scrollArea->verticalScrollBar()->setValue(Reg.y()*scaleFactor);
+    scrollArea->horizontalScrollBar()->setValue(rec.x()*scaleFactor);
+    scrollArea->verticalScrollBar()->setValue(rec.y()*scaleFactor);
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *e)

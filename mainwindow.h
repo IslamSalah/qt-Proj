@@ -34,7 +34,7 @@ private:
     QPoint origin, end;
     QRubberBand *rubberBand;
     QRect getSelectedRegOnImg();
-    void zoomToRegion();
+    void zoomToRegion(QRect rec);
 public slots:
     void open(void);
     void save(void);
