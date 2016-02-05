@@ -317,6 +317,7 @@ QRect MainWindow::getSelectedRegOnImg()
 
 void MainWindow::zoomToRegion(QRect rec)
 {
+    //scale to required region
     double s;
     if(rec.width() > rec.height()){
         s = 1.0*ui->imageArea->width()/this->width();           // scale first the QLabel:imageArea to fit the window
@@ -325,15 +326,25 @@ void MainWindow::zoomToRegion(QRect rec)
         s = 1.0*ui->imageArea->height()/(this->height()-10);
         s*= 1.0*rec.height()/ui->imageArea->pixmap()->height();
     }
-
+    //check scale boundries
     if(scaleFactor/s < 7.5)     // can zoom to selected region
         scaleImage(1/s);
     else                        // can't, so zoom as much as you can
         scaleImage(7.5/scaleFactor);
-    // scroll to topleft point of QLabel:imageArea
+    //scroll to required region
+    if(rec.width() < rec.height()){
+        double a = 1.0*(this->width()-rec.width()*scaleFactor)/2.0;
+        rec.setX(rec.x()-a/scaleFactor);
+        rec.setX(rec.x()>0?rec.x():0);      // to be non-negative
+    }else{
+        double a = 1.0*(this->height()-rec.height()*scaleFactor)/2.0;
+        rec.setY(rec.y()-a/scaleFactor);
+        rec.setY(rec.y()>0?rec.y():0);      // to be non-negative
+    }
+        // scroll to topleft point of QLabel:imageArea
     scrollArea->horizontalScrollBar()->setValue(scrollArea->horizontalScrollBar()->minimum());
     scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->minimum());
-    // scroll to required place
+        // scroll to make required place centred on small dimension
     scrollArea->horizontalScrollBar()->setValue(rec.x()*scaleFactor);
     scrollArea->verticalScrollBar()->setValue(rec.y()*scaleFactor);
 }
