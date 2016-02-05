@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>res/icon_open.png</file>
+        <file>res/icon_save.png</file>
+        <file>res/icon_close.png</file>
+        <file>res/icon_crop.png</file>
+        <file>res/icon_exit.png</file>
+        <file>res/icon_fit_to_width.png</file>
+        <file>res/icon_redo.png</file>
+        <file>res/icon_reset.png</file>
+        <file>res/icon_rotate.png</file>
+        <file>res/icon_undo.png</file>
+        <file>res/icon_zoom_in.png</file>
+        <file>res/icon_zoom_out.png</file>
+        <file>res/icon_normal.png</file>
+    </qresource>
+</RCC>
