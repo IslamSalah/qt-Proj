@@ -29,6 +29,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //resize window to proper size
     resize(QGuiApplication::primaryScreen()->availableSize() * 3 / 5);
+
+    //
+    ui->toolBar->setMovable(false);     //to avoid out of sync. rubberband
+    rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
+
 }
 
 MainWindow::~MainWindow()
@@ -37,8 +42,7 @@ MainWindow::~MainWindow()
 }
 void MainWindow::open(void){
     //check if we need to save this file first.
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
     if(isImageLoaded())
         if(isNeedSave())
             checkSave();
@@ -58,8 +62,7 @@ void MainWindow::save(void){
         msg.exec();
         return;
     }
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
     QString imagePath = QFileDialog::getSaveFileName(this,tr("Save File"),"",tr("JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)"));
 
     QImage imageObject = ui->imageArea->pixmap()->toImage();
@@ -104,7 +107,7 @@ void MainWindow::normalSize(void){
 void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
-    if(rubberBand!=NULL && rubberBand->isVisible()) // zoom to specified region
+    if(rubberBand->isVisible()) // zoom to specified region
         zoomToRegion();
     else if(scaleFactor < 6){ // normal zoomIn
         //check if the picture is zoomed enough.
@@ -126,8 +129,7 @@ void MainWindow::scaleImage(double scale)
     ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
     adjustScrollBar(scrollArea->horizontalScrollBar(), scale);
     adjustScrollBar(scrollArea->verticalScrollBar(), scale);
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
 }
 void MainWindow::connectActions(void){
     QAction *action;
@@ -203,8 +205,7 @@ void MainWindow::closeFile(void){
         return;
     ui->imageArea->setPixmap(QPixmap());
     scaleImage(1/scaleFactor);
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
 }
 
 void MainWindow::reset(void){
@@ -218,8 +219,7 @@ void MainWindow::rotate(void){
         msg.exec();
         return;
     }
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
     bool ok;
     QRegExp re("\\d*"); //regix all integers
     QString text = QInputDialog::getText(this, tr("Angle"), tr("Angle:"),
@@ -252,7 +252,7 @@ void MainWindow::crop(void){
         msg.exec();
         return;
     }
-    if(rubberBand!=NULL && rubberBand->isVisible()){
+    if(rubberBand->isVisible()){
         rubberBand->hide();
         QPixmap pix = ui->imageArea->pixmap()->copy(getSelectedRegOnImg());
         ui->imageArea->setPixmap(pix);
@@ -303,9 +303,10 @@ bool MainWindow::isImageLoaded(void){
 
 QRect MainWindow::getSelectedRegOnImg()
 {
+    QPoint toolBarPoint(0, 44);
     //do mapping of points
-    QPoint a = (origin - ui->imageArea->pos())/scaleFactor;
-    QPoint b = (end - ui->imageArea->pos())/scaleFactor;
+    QPoint a = (origin - ui->imageArea->pos()-toolBarPoint)/scaleFactor;
+    QPoint b = (end - ui->imageArea->pos()-toolBarPoint)/scaleFactor;
 
     QPoint topLeft(std::min(a.x(), b.x()) , std::min(a.y(), b.y()));
     QPoint bottomRight(std::max(a.x(), b.x()) , std::max(a.y(), b.y()));
@@ -326,8 +327,10 @@ void MainWindow::zoomToRegion()
         s*= 1.0*Reg.height()/ui->imageArea->pixmap()->height();
     }
 
-    if(scaleFactor/s < 7.5)
+    if(scaleFactor/s < 7.5)     // can zoom to selected region
         scaleImage(1/s);
+    else                        // can't, so zoom as much as you can
+        scaleImage(7.5/scaleFactor);
     // scroll to topleft point of QLabel:imageArea
     scrollArea->horizontalScrollBar()->setValue(scrollArea->horizontalScrollBar()->minimum());
     scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->minimum());
@@ -338,8 +341,6 @@ void MainWindow::zoomToRegion()
 
 void MainWindow::mousePressEvent(QMouseEvent *e)
 {
-    if (!rubberBand)
-        rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
     if(ui->imageArea->underMouse()){
         origin = e->pos();
         rubberBand->setGeometry(QRect(origin, QSize()));
@@ -348,10 +349,8 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
 
 void MainWindow::mouseMoveEvent(QMouseEvent *e)
 {
-//    if(ui->imageArea->underMouse()){
-        rubberBand->setGeometry(QRect(origin, e->pos()).normalized());
-        end = e->pos();
-//    }
+    rubberBand->setGeometry(QRect(origin, e->pos()).normalized());
+    end = e->pos();
 }
 
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *)
@@ -364,7 +363,5 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *)
 
 void MainWindow::wheelEvent(QWheelEvent *)
 {
-    if(rubberBand!=NULL)
-        rubberBand->hide();
+    rubberBand->hide();
 }
-
