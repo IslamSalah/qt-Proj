@@ -45,8 +45,9 @@ void MainWindow::open(void){
     rubberBand->hide();
     if(isImageLoaded())
         if(isNeedSave())
-            checkSave();
-    QString imagePath = QFileDialog::getOpenFileName(this,tr("Open File"),"",tr("JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)" ));
+            if(!checkSave())
+                return;
+    QString imagePath = QFileDialog::getOpenFileName(this,tr("Open File"),"",tr("all(*.jpg *.jpeg *.png *bmp);;JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)" ));
     if (imagePath.isEmpty() || !loadFile(imagePath)){
         QMessageBox msg;
         msg.setText("file not found!");
@@ -248,8 +249,10 @@ void MainWindow::redo(void){
 
 void MainWindow::closeFile(void){
     //clear everything here
-    if(!isImageLoaded())
-        return;
+    if(isNeedSave()){
+        if(!checkSave())
+            return;
+    }
     ui->imageArea->setPixmap(QPixmap());
     scaleImage(1/scaleFactor);
     rubberBand->hide();
@@ -323,7 +326,8 @@ void MainWindow::crop(void){
 
 void MainWindow::exit(void){
     if(isNeedSave()){
-        checkSave();
+        if(!checkSave())
+            return;
     }
     QApplication::exit();
 }
