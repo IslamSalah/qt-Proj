@@ -54,6 +54,9 @@ void MainWindow::open(void){
         return;
     }
     ui->imageArea->resize(ui->imageArea->pixmap()->size());
+    stack1.clear();
+    stack2.clear();
+    snapshot();
 }
 void MainWindow::save(void){
     if(ui->imageArea->pixmap() == NULL){
@@ -96,23 +99,29 @@ void MainWindow::fitToWindow(void){
     double sx = 1.0*ui->imageArea->height()/(this->height()), sy = 1.0*ui->imageArea->width()/this->width();
     sx = (sx > sy? sx: sy);
     scaleImage(1.0/sx);
+    snapshot();
 }
 
 void MainWindow::normalSize(void){
     if(!isImageLoaded())
         return;
     scaleImage(1/scaleFactor);
+    snapshot();
 }
 
 void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
-    if(rubberBand->isVisible()) // zoom to specified region
-        zoomToRegion(getSelectedRegOnImg());
+    if(rubberBand->isVisible()){ // zoom to specified region
+        zoomToRegion(getSelectedRegOnImg(),false);
+
+    }
     else if(scaleFactor < 6){ // normal zoomIn
         //check if the picture is zoomed enough.
         scaleImage(1.25);
+        snapshot();
     }
+
 }
 
 void MainWindow::zoomOut(void){
@@ -121,6 +130,7 @@ void MainWindow::zoomOut(void){
     if(scaleFactor > 0.2){
         //check if the picture is zoomed enough.
         scaleImage(0.8);
+        snapshot();
     }
 }
 void MainWindow::scaleImage(double scale)
@@ -130,7 +140,26 @@ void MainWindow::scaleImage(double scale)
     adjustScrollBar(scrollArea->horizontalScrollBar(), scale);
     adjustScrollBar(scrollArea->verticalScrollBar(), scale);
     rubberBand->hide();
+
 }
+
+void MainWindow::snapshot(){ //collect a snapshot of current picture for later undo/redo
+    stack2.clear();
+    screenshot shot;
+    shot.pix = *ui->imageArea->pixmap();
+    shot.scale=scaleFactor;
+    shot.need_rectangle=false;
+    stack1.push(shot);
+
+    if(stack1.size()>20){
+        while(stack1.size()>2)
+            stack2.push(stack1.pop());
+        stack1.pop();
+        while(!stack2.isEmpty())
+            stack1.push(stack2.pop());
+    }
+}
+
 void MainWindow::connectActions(void){
     QAction *action;
 
@@ -193,10 +222,28 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor){
 
 
 void MainWindow::undo(void){
-
+    if(stack1.size()>1){
+        stack2.push(stack1.pop());
+        ui->imageArea->setPixmap(stack1.top().pix);
+        scaleFactor=stack1.top().scale;
+        ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+        if(stack1.top().need_rectangle){
+            zoomToRegion(stack1.top().rectangle,true);
+        }
+    }
+    rubberBand->hide();
 }
 void MainWindow::redo(void){
-
+    if(stack2.size()>0){
+        stack1.push(stack2.pop());
+        ui->imageArea->setPixmap(stack1.top().pix);
+        scaleFactor=stack1.top().scale;
+        ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+        if(stack1.top().need_rectangle){
+            zoomToRegion(stack1.top().rectangle,true);
+        }
+    }
+    rubberBand->hide();
 }
 
 void MainWindow::closeFile(void){
@@ -206,10 +253,21 @@ void MainWindow::closeFile(void){
     ui->imageArea->setPixmap(QPixmap());
     scaleImage(1/scaleFactor);
     rubberBand->hide();
+    snapshot();
 }
 
 void MainWindow::reset(void){
-
+    stack2.clear();
+    while(stack1.size()>1){
+       stack1.pop();
+    }
+    ui->imageArea->setPixmap(stack1.top().pix);
+    scaleFactor=stack1.top().scale;
+    ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+    if(stack1.top().need_rectangle){
+        zoomToRegion(stack1.top().rectangle,true);
+    }
+    rubberBand->hide();
 }
 
 void MainWindow::rotate(void){
@@ -233,6 +291,8 @@ void MainWindow::rotate(void){
             pixmap = pixmap.transformed(rm);
             ui->imageArea->setPixmap(pixmap);
             ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+            snapshot();
+
         }catch(std::exception &e){
             QMessageBox msgBox;
             msgBox.setText("Please Enter a Valid Angle.");
@@ -257,6 +317,7 @@ void MainWindow::crop(void){
         QPixmap pix = ui->imageArea->pixmap()->copy(getSelectedRegOnImg());
         ui->imageArea->setPixmap(pix);
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+        snapshot();
     }
 }
 
@@ -315,7 +376,7 @@ QRect MainWindow::getSelectedRegOnImg()
     return rect;
 }
 
-void MainWindow::zoomToRegion(QRect rec)
+void MainWindow::zoomToRegion(QRect rec,bool undoing)
 {
     //scale to required region
     double s;
@@ -326,11 +387,19 @@ void MainWindow::zoomToRegion(QRect rec)
         s = 1.0*ui->imageArea->height()/(this->height()-10);
         s*= 1.0*rec.height()/ui->imageArea->pixmap()->height();
     }
-    //check scale boundries
-    if(scaleFactor/s < 7.5)     // can zoom to selected region
-        scaleImage(1/s);
-    else                        // can't, so zoom as much as you can
-        scaleImage(7.5/scaleFactor);
+    if(!undoing){   //if doing the actual zooming , not undo/redo
+        //check scale boundries
+        if(scaleFactor/s < 7.5)     // can zoom to selected region
+                scaleImage(1/s);
+        else                      // can't, so zoom as much as you can
+            scaleImage(7.5/scaleFactor);
+
+        //take a shot for undo/redo with true value as we need the rubberband rectangle
+        snapshot();
+        //setting the rectangle of the snapshot to be the current selected rectangle
+        stack1.top().rectangle=rec;
+        stack1.top().need_rectangle=true;
+    }
     //scroll to required region
     if(rec.width() < rec.height()){
         double a = 1.0*(this->width()-rec.width()*scaleFactor)/2.0;
@@ -341,7 +410,7 @@ void MainWindow::zoomToRegion(QRect rec)
         rec.setY(rec.y()-a/scaleFactor);
         rec.setY(rec.y()>0?rec.y():0);      // to be non-negative
     }
-        // scroll to topleft point of QLabel:imageArea
+         // scroll to topleft point of QLabel:imageArea
     scrollArea->horizontalScrollBar()->setValue(scrollArea->horizontalScrollBar()->minimum());
     scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->minimum());
         // scroll to make required place centred on small dimension

@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QCloseEvent>
 #include <QRubberBand>
+#include <QStack>
 
 namespace Ui {
 class MainWindow;
@@ -34,7 +35,16 @@ private:
     QPoint origin, end;
     QRubberBand *rubberBand;
     QRect getSelectedRegOnImg();
-    void zoomToRegion(QRect rec);
+    void zoomToRegion(QRect rec,bool undoing);
+    void snapshot();
+    struct screenshot{
+        QPixmap pix;
+        QRect rectangle;
+        bool need_rectangle;
+        double scale;
+    };
+    QStack<screenshot> stack1,stack2;
+
 public slots:
     void open(void);
     void save(void);
