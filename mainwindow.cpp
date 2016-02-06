@@ -96,7 +96,7 @@ bool MainWindow::loadFile(const QString &fileName){
 void MainWindow::fitToWindow(void){
     if(!isImageLoaded())
         return;
-    double sx = 1.0*ui->imageArea->height()/(this->height()), sy = 1.0*ui->imageArea->width()/this->width();
+    double sx = 1.0*ui->imageArea->height()/(this->height()-44), sy = 1.0*ui->imageArea->width()/this->width();
     sx = (sx > sy? sx: sy);
     scaleImage(1.0/sx);
     snapshot();
