@@ -329,7 +329,7 @@ void MainWindow::exit(void){
 }
 
 bool MainWindow::isNeedSave(void){
-    return true;
+    return stack1.size()>1 && isImageLoaded();
 }
 
 bool MainWindow::checkSave(void){
@@ -359,7 +359,7 @@ void MainWindow::closeEvent(QCloseEvent *event){
 }
 
 bool MainWindow::isImageLoaded(void){
-    return (ui->imageArea->pixmap() != NULL);
+    return (ui->imageArea->pixmap() != NULL && !ui->imageArea->pixmap()->isNull());
 }
 
 QRect MainWindow::getSelectedRegOnImg()
@@ -401,21 +401,26 @@ void MainWindow::zoomToRegion(QRect rec,bool undoing)
         stack1.top().need_rectangle=true;
     }
     //scroll to required region
-    if(rec.width() < rec.height()){
-        double a = 1.0*(this->width()-rec.width()*scaleFactor)/2.0;
-        rec.setX(rec.x()-a/scaleFactor);
-        rec.setX(rec.x()>0?rec.x():0);      // to be non-negative
-    }else{
-        double a = 1.0*(this->height()-rec.height()*scaleFactor)/2.0;
-        rec.setY(rec.y()-a/scaleFactor);
-        rec.setY(rec.y()>0?rec.y():0);      // to be non-negative
-    }
+    centeredRect(&rec);
          // scroll to topleft point of QLabel:imageArea
     scrollArea->horizontalScrollBar()->setValue(scrollArea->horizontalScrollBar()->minimum());
     scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->minimum());
         // scroll to make required place centred on small dimension
     scrollArea->horizontalScrollBar()->setValue(rec.x()*scaleFactor);
     scrollArea->verticalScrollBar()->setValue(rec.y()*scaleFactor);
+}
+
+void MainWindow::centeredRect(QRect *rec)
+{
+    if(rec->width() < rec->height()){
+        double a = 1.0*(this->width()-rec->width()*scaleFactor)/2.0;
+        rec->setX(rec->x()-a/scaleFactor);
+        rec->setX(rec->x()>0?rec->x():0);      // to be non-negative
+    }else{
+        double a = 1.0*(this->height()-rec->height()*scaleFactor)/2.0;
+        rec->setY(rec->y()-a/scaleFactor);
+        rec->setY(rec->y()>0?rec->y():0);      // to be non-negative
+    }
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *e)

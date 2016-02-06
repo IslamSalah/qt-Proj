@@ -36,6 +36,7 @@ private:
     QRubberBand *rubberBand;
     QRect getSelectedRegOnImg();
     void zoomToRegion(QRect rec,bool undoing);
+    void centeredRect(QRect *rec);
     void snapshot();
     struct screenshot{
         QPixmap pix;
