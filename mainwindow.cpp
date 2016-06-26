@@ -9,7 +9,13 @@
 
 #include <QInputDialog>
 #include <QLineEdit>
+#include <QVBoxLayout>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QDialogButtonBox>
 #include <QDebug>
+#include <QPainter>
+#include <QtMath>
 
 #include <iostream>
 MainWindow::MainWindow(QWidget *parent) :
@@ -113,13 +119,17 @@ void MainWindow::normalSize(void){
 void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
+
+    int width = ui->imageArea->width();
+    int height = ui->imageArea->height();
+
     if(rubberBand->isVisible()){ // zoom to specified region
         zoomToRegion(getSelectedRegOnImg(),false);
 
     }
-    else if(scaleFactor < 6){ // normal zoomIn
+    else if(width*height < MAX_IMG_AREA){ // normal zoomIn
         //check if the picture is zoomed enough.
-        scaleImage(1.25);
+        scaleImage(ZOOM_FACTOR);
         snapshot();
     }
 
@@ -128,9 +138,13 @@ void MainWindow::zoomIn(void){
 void MainWindow::zoomOut(void){
     if(!isImageLoaded())
         return;
-    if(scaleFactor > 0.2){
+
+    int width = ui->imageArea->width();
+    int height = ui->imageArea->height();
+
+    if(width*height > MIN_IMG_AREA){
         //check if the picture is zoomed enough.
-        scaleImage(0.8);
+        scaleImage(1/ZOOM_FACTOR);
         snapshot();
     }
 }
@@ -273,6 +287,11 @@ void MainWindow::reset(void){
     rubberBand->hide();
 }
 
+bool valid_input(QString s){
+    QRegExp regex("\\d*"); //regex all integers
+    return !s.isEmpty() && regex.exactMatch(s);
+}
+
 void MainWindow::rotate(void){
     if(!isImageLoaded()){
         QMessageBox msg;
@@ -282,20 +301,35 @@ void MainWindow::rotate(void){
     }
     rubberBand->hide();
     bool ok;
-    QRegExp re("\\d*"); //regix all integers
-    QString text = QInputDialog::getText(this, tr("Angle"), tr("Angle:"),
-                                         QLineEdit::Normal,QDir::home().dirName(), &ok);
-    if (ok && !text.isEmpty() && re.exactMatch(text)){
+    QString text = QInputDialog::getText(this, tr("Angle"), tr("Angle in degree"), QLineEdit::Normal,"90", &ok);
+    if (ok && valid_input(text)){
         try{
-            int angle = text.toInt();
-            QPixmap pixmap(*ui->imageArea->pixmap());
-            QMatrix rm;
-            rm.rotate(angle);
-            pixmap = pixmap.transformed(rm);
-            ui->imageArea->setPixmap(pixmap);
-            ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-            snapshot();
+            int angle = text.toInt()%360;
+//            QPixmap pixmap(*ui->imageArea->pixmap());
+//            QMatrix rm;
+//            rm.rotate(angle);
+//            pixmap = pixmap.transformed(rm);
+//            ui->imageArea->setPixmap(pixmap);
+//            ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+//            snapshot();
 
+            QPixmap img("/Users/islamsalah/Desktop/build-ImageViewer-Desktop_Qt_5_7_0_clang_64bit-Debug/ImageViewer.app/Contents/MacOS/12065703_10207250130308111_2521342137978414620_n.jpg");
+            QPixmap img2(img.size());
+
+            QPainter p(&img2);
+            p.setRenderHint(QPainter::Antialiasing);
+            p.setRenderHint(QPainter::SmoothPixmapTransform);
+            p.setRenderHint(QPainter::HighQualityAntialiasing);
+
+            p.translate(img2.size().width()/2, img2.size().height()/2);
+            p.rotate(angle);
+            p.translate(-img2.size().width()/2, -img2.size().height()/2);
+
+            p.drawPixmap(0, 0, img);
+            p.end();
+            ui->imageArea->clear();
+            QApplication::processEvents();
+            ui->imageArea->setPixmap(img2);
         }catch(std::exception &e){
             QMessageBox msgBox;
             msgBox.setText("Please Enter a Valid Angle.");
@@ -325,10 +359,10 @@ void MainWindow::crop(void){
 }
 
 void MainWindow::exit(void){
-    if(isNeedSave()){
-        if(!checkSave())
-            return;
-    }
+//    if(isNeedSave()){
+//        if(!checkSave())
+//            return;
+//    }
     QApplication::exit();
 }
 
@@ -452,4 +486,90 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *)
 void MainWindow::wheelEvent(QWheelEvent *)
 {
     rubberBand->hide();
+}
+
+bool MainWindow::read_dimentions(int *width, int *height, int *unit_type, bool *isProp)
+{
+    QDialog *d = new QDialog();
+    QVBoxLayout *vbox = new QVBoxLayout();
+
+    QComboBox *comboBox = new QComboBox();
+    comboBox->addItems(QStringList() << "pixels" << "percentage");
+
+    QLabel *label_width = new QLabel("Width: ");
+    QLineEdit *edit_width = new QLineEdit(QString::number(ui->imageArea->pixmap()->width()));
+
+    QLabel *label_height = new QLabel("Height: ");
+    QLineEdit *edit_height = new QLineEdit(QString::number(ui->imageArea->pixmap()->height()));
+
+
+    QCheckBox *check_box = new QCheckBox("Scale proportionally");
+    check_box->setChecked(true);
+
+    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok
+                                                        | QDialogButtonBox::Cancel);
+    vbox->addWidget(comboBox);
+    vbox->addWidget(label_width);
+    vbox->addWidget(edit_width);
+    vbox->addWidget(label_height);
+    vbox->addWidget(edit_height);
+    vbox->addWidget(check_box);
+    vbox->addWidget(buttonBox);
+
+    d->setLayout(vbox);
+
+    QObject::connect(buttonBox, SIGNAL(accepted()), d, SLOT(accept()));
+    QObject::connect(buttonBox, SIGNAL(rejected()), d, SLOT(reject()));
+
+    int result = d->exec();
+    if(result == QDialog::Accepted)
+    {
+        if(valid_input(edit_width->text()) && valid_input(edit_height->text())){
+            *unit_type = comboBox->currentIndex();
+            *width = edit_width->text().toInt();
+            *height = edit_height->text().toInt();
+            *isProp = check_box->isChecked();
+            return true;
+        } else {
+            QMessageBox msgBox;
+            msgBox.setText("Please enter valid dimensions!");
+            msgBox.exec();
+            return false;
+        }
+    }
+    return false;
+}
+
+void MainWindow::on_actionAdjust_size_triggered()
+{
+    if(!isImageLoaded()){
+        QMessageBox msg;
+        msg.setText("no image is loaded!");
+        msg.exec();
+        return;
+    }
+    rubberBand->hide();
+
+    int width, height, unit_type;
+    bool isProp;
+
+    if(!read_dimentions(&width, &height, &unit_type, &isProp))
+        return;
+
+    int valid_size[] = {(int)qSqrt(MAX_IMG_AREA), 100};
+    if(std::max(width, height) > valid_size[unit_type]){
+        QMessageBox msgBox;
+        msgBox.setText("Input can't exceed "+QString::number(valid_size[unit_type])+"!");
+        msgBox.exec();
+        return;
+    }
+
+    if(unit_type == 1){     //percentage
+        width = ui->imageArea->pixmap()->width() * width / 100;
+        height = ui->imageArea->pixmap()->height() * height / 100;
+    }
+
+    QPixmap pix = ui->imageArea->pixmap()->scaled(width, height, isProp? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio);
+    ui->imageArea->setPixmap(pix);
+    scaleImage(1);
 }

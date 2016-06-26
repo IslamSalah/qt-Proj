@@ -13,5 +13,6 @@
         <file>res/icon_zoom_in.png</file>
         <file>res/icon_zoom_out.png</file>
         <file>res/icon_normal.png</file>
+        <file>res/resize.png</file>
     </qresource>
 </RCC>

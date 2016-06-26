@@ -38,6 +38,7 @@ private:
     void zoomToRegion(QRect rec,bool undoing);
     void centeredRect(QRect *rec);
     void snapshot();
+    bool read_dimentions(int *, int *, int *, bool *);
     struct screenshot{
         QPixmap pix;
         QRect rectangle;
@@ -45,6 +46,9 @@ private:
         double scale;
     };
     QStack<screenshot> stack1,stack2;
+    const int MAX_IMG_AREA = 100000000;
+    const int MIN_IMG_AREA = 10;
+    const double ZOOM_FACTOR = 1.25;
 
 public slots:
     void open(void);
@@ -68,6 +72,8 @@ protected:
     void mouseMoveEvent(QMouseEvent *e);
     void mouseDoubleClickEvent(QMouseEvent *);
     void wheelEvent(QWheelEvent *);
+private slots:
+    void on_actionAdjust_size_triggered();
 };
 
 #endif // MAINWINDOW_H
