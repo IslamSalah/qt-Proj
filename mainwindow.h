@@ -52,6 +52,7 @@ private:
     const int MIN_IMG_AREA = 10;
     const double ZOOM_FACTOR = 1.25;
     bool isSaved = false;
+    QPoint get_inscribed_point(QPoint );
 
 public slots:
     void open(void);

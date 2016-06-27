@@ -368,7 +368,7 @@ bool MainWindow::isNeedSave(void){
 bool MainWindow::checkSave(void){
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(this, tr("Application"),
-                 tr("The imae has been modified.\n"
+                 tr("The image has been modified.\n"
                     "Do you want to save your changes?"),
                  QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     if (ret == QMessageBox::Save){
@@ -464,10 +464,39 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
     }
 }
 
+
+QPoint MainWindow::get_inscribed_point(QPoint current_point){
+    int x1 = ui->imageArea->pos().x();
+    int y1 = ui->imageArea->pos().y()+44;
+
+    int x2 = x1 + ui->imageArea->width();
+    int y2 = y1 + ui->imageArea->height();
+
+    int x,y;
+
+    if(current_point.x() < x1)
+        x = x1;
+    else if (current_point.x() > x2)
+        x = x2;
+    else
+        x = current_point.x();
+
+    if(current_point.y() < y1)
+        y = y1;
+    else if (current_point.y() > y2)
+        y = y2;
+    else
+        y = current_point.y();
+
+    return QPoint(x, y);
+}
+
 void MainWindow::mouseMoveEvent(QMouseEvent *e)
 {
-    rubberBand->setGeometry(QRect(origin, e->pos()).normalized());
-    end = e->pos();
+    QPoint point = get_inscribed_point(e->pos());
+
+    rubberBand->setGeometry(QRect(origin, point).normalized());
+    end = point;
 }
 
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *)
@@ -513,8 +542,11 @@ bool MainWindow::read_dimentions(int *width, int *height, int *unit_type, bool *
 
     d->setLayout(vbox);
 
-    QObject::connect(buttonBox, SIGNAL(accepted()), d, SLOT(accept()));
-    QObject::connect(buttonBox, SIGNAL(rejected()), d, SLOT(reject()));
+    connect(buttonBox, SIGNAL(accepted()), d, SLOT(accept()));
+    connect(buttonBox, SIGNAL(rejected()), d, SLOT(reject()));
+
+    connect(comboBox, SIGNAL(currentIndexChanged(int)), edit_width, SLOT(clear()));
+    connect(comboBox, SIGNAL(currentIndexChanged(int)), edit_height, SLOT(clear()));
 
     int result = d->exec();
     if(result == QDialog::Accepted)
