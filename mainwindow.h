@@ -29,7 +29,7 @@ private:
     QScrollArea * scrollArea;
     bool loadFile(const QString &);
     double scaleFactor;
-    double rotation;
+    double rotation = 0.0;
     void adjustScrollBar(QScrollBar *scrollBar, double factor);
     void initArea(void);
     bool isNeedSave(void);
@@ -51,6 +51,7 @@ private:
     const int MAX_IMG_AREA = 100000000;
     const int MIN_IMG_AREA = 10;
     const double ZOOM_FACTOR = 1.25;
+    bool isSaved = false;
 
 public slots:
     void open(void);

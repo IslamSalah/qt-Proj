@@ -83,6 +83,8 @@ void MainWindow::save(void){
         QMessageBox msg;
         msg.setText("Failed to save ");
         msg.exec();
+    }else{
+        isSaved = true;
     }
 }
 
@@ -168,6 +170,9 @@ void MainWindow::snapshot(){ //collect a snapshot of current picture for later u
     shot.scale=scaleFactor;
     shot.need_rectangle=false;
     stack1.push(shot);
+
+    //new things has been done to image, it needs to be saved
+    isSaved = false;
 
     if(stack1.size()>20){
         while(stack1.size()>2)
@@ -309,6 +314,7 @@ void MainWindow::rotate(void){
         try{
             double angle = text;
             rotation += angle;
+            rotation =rotation - 360/(int)rotation * (int) rotation; //mod like op
             QPixmap pixmap(*orgImage);
             QMatrix rm;
             rm.rotate(rotation);
@@ -351,7 +357,7 @@ void MainWindow::exit(void){
 }
 
 bool MainWindow::isNeedSave(void){
-    return stack1.size()>1 && isImageLoaded();
+    return stack1.size()>1 && isImageLoaded() && !isSaved;
 }
 
 bool MainWindow::checkSave(void){
