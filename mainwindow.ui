@@ -29,8 +29,11 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
+    <property name="frameShape">
+     <enum>QFrame::NoFrame</enum>
+    </property>
     <property name="text">
-     <string>No image is loaded</string>
+     <string/>
     </property>
     <property name="scaledContents">
      <bool>true</bool>

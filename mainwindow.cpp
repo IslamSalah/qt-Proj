@@ -63,6 +63,8 @@ void MainWindow::open(void){
         return;
     }
     ui->imageArea->resize(ui->imageArea->pixmap()->size());
+    ui->imageArea->setFrameStyle(QFrame::Box);
+
     orgImage = new QPixmap(*ui->imageArea->pixmap());
     stack1.clear();
     stack2.clear();
@@ -276,6 +278,7 @@ void MainWindow::closeFile(void){
             return;
     }
     ui->imageArea->setPixmap(QPixmap());
+    ui->imageArea->setFrameStyle(QFrame::NoFrame); //remove frame
     scaleImage(1/scaleFactor);
     rubberBand->hide();
     snapshot();
