@@ -53,6 +53,7 @@ void MainWindow::open(void){
         if(isNeedSave())
             if(!checkSave())
                 return;
+    rotation = 0;
     QString imagePath = QFileDialog::getOpenFileName(this,tr("Open File"),"",tr("all(*.jpg *.jpeg *.png *bmp);;JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)" ));
     if(imagePath.isEmpty()){
         return;
@@ -317,7 +318,8 @@ void MainWindow::rotate(void){
         try{
             double angle = text;
             rotation += angle;
-            rotation =rotation - 360/(int)rotation * (int) rotation; //mod like op
+//            rotation =rotation - 360/(int)rotation * (int) rotation; //mod like op
+            rotation = rotation - (int)rotation/360 * 360; //mod like op
             QPixmap pixmap(*orgImage);
             QMatrix rm;
             rm.rotate(rotation);
