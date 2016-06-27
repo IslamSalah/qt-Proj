@@ -23,11 +23,13 @@ public:
 protected:
     void closeEvent(QCloseEvent *);
 private:
+    QPixmap * orgImage;
     Ui::MainWindow *ui;
     QLabel * imageArea;
     QScrollArea * scrollArea;
     bool loadFile(const QString &);
     double scaleFactor;
+    double rotation;
     void adjustScrollBar(QScrollBar *scrollBar, double factor);
     void initArea(void);
     bool isNeedSave(void);

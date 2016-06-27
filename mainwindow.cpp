@@ -54,13 +54,16 @@ void MainWindow::open(void){
             if(!checkSave())
                 return;
     QString imagePath = QFileDialog::getOpenFileName(this,tr("Open File"),"",tr("all(*.jpg *.jpeg *.png *bmp);;JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)" ));
-    if (imagePath.isEmpty() || !loadFile(imagePath)){
+    if(imagePath.isEmpty()){
+        return;
+    }else if (!loadFile(imagePath)){
         QMessageBox msg;
         msg.setText("file not found!");
         msg.exec();
         return;
     }
     ui->imageArea->resize(ui->imageArea->pixmap()->size());
+    orgImage = new QPixmap(*ui->imageArea->pixmap());
     stack1.clear();
     stack2.clear();
     snapshot();
@@ -305,36 +308,39 @@ void MainWindow::rotate(void){
     if (ok && valid_input(text)){
         try{
             int angle = text.toInt()%360;
-//            QPixmap pixmap(*ui->imageArea->pixmap());
-//            QMatrix rm;
-//            rm.rotate(angle);
-//            pixmap = pixmap.transformed(rm);
-//            ui->imageArea->setPixmap(pixmap);
-//            ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-//            snapshot();
+            rotation += angle;
+            QPixmap pixmap(*orgImage);
+            QMatrix rm;
+            rm.rotate(rotation);
+            pixmap = pixmap.transformed(rm);
+            ui->imageArea->setPixmap(pixmap);
+            ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+            snapshot();
 
-            QPixmap img("/Users/islamsalah/Desktop/build-ImageViewer-Desktop_Qt_5_7_0_clang_64bit-Debug/ImageViewer.app/Contents/MacOS/12065703_10207250130308111_2521342137978414620_n.jpg");
-            QPixmap img2(img.size());
+//            QPixmap img("/Users/islamsalah/Desktop/build-ImageViewer-Desktop_Qt_5_7_0_clang_64bit-Debug/ImageViewer.app/Contents/MacOS/12065703_10207250130308111_2521342137978414620_n.jpg");
+//            QPixmap img2(img.size());
 
-            QPainter p(&img2);
-            p.setRenderHint(QPainter::Antialiasing);
-            p.setRenderHint(QPainter::SmoothPixmapTransform);
-            p.setRenderHint(QPainter::HighQualityAntialiasing);
+//            QPainter p(&img2);
+//            p.setRenderHint(QPainter::Antialiasing);
+//            p.setRenderHint(QPainter::SmoothPixmapTransform);
+//            p.setRenderHint(QPainter::HighQualityAntialiasing);
 
-            p.translate(img2.size().width()/2, img2.size().height()/2);
-            p.rotate(angle);
-            p.translate(-img2.size().width()/2, -img2.size().height()/2);
+//            p.translate(img2.size().width()/2, img2.size().height()/2);
+//            p.rotate(angle);
+//            p.translate(-img2.size().width()/2, -img2.size().height()/2);
 
-            p.drawPixmap(0, 0, img);
-            p.end();
-            ui->imageArea->clear();
-            QApplication::processEvents();
-            ui->imageArea->setPixmap(img2);
+//            p.drawPixmap(0, 0, img);
+//            p.end();
+//            ui->imageArea->clear();
+//            QApplication::processEvents();
+//            ui->imageArea->setPixmap(img2);
         }catch(std::exception &e){
             QMessageBox msgBox;
             msgBox.setText("Please Enter a Valid Angle.");
             msgBox.exec();
         }
+    }else if (!ok){
+        //do nothing
     }else{
         QMessageBox msgBox;
         msgBox.setText("Please Enter a Valid Angle.");
@@ -359,10 +365,10 @@ void MainWindow::crop(void){
 }
 
 void MainWindow::exit(void){
-//    if(isNeedSave()){
-//        if(!checkSave())
-//            return;
-//    }
+    if(isNeedSave()){
+        if(!checkSave())
+            return;
+    }
     QApplication::exit();
 }
 

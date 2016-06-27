@@ -43,7 +43,7 @@
      <x>0</x>
      <y>0</y>
      <width>731</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -117,7 +117,7 @@
      <normaloff>:/img/res/icon_open.png</normaloff>:/img/res/icon_open.png</iconset>
    </property>
    <property name="text">
-    <string>open</string>
+    <string>open...</string>
    </property>
    <property name="toolTip">
     <string>Open</string>
@@ -132,7 +132,7 @@
      <normaloff>:/img/res/icon_save.png</normaloff>:/img/res/icon_save.png</iconset>
    </property>
    <property name="text">
-    <string>save</string>
+    <string>save...</string>
    </property>
    <property name="toolTip">
     <string>Save</string>
@@ -177,7 +177,7 @@
      <normaloff>:/img/res/icon_rotate.png</normaloff>:/img/res/icon_rotate.png</iconset>
    </property>
    <property name="text">
-    <string>rotate</string>
+    <string>rotate...</string>
    </property>
    <property name="toolTip">
     <string>Rotate</string>
