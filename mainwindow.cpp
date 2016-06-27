@@ -304,10 +304,10 @@ void MainWindow::rotate(void){
     }
     rubberBand->hide();
     bool ok;
-    QString text = QInputDialog::getText(this, tr("Angle"), tr("Angle in degree"), QLineEdit::Normal,"90", &ok);
-    if (ok && valid_input(text)){
+    double text = QInputDialog::getDouble(this, tr("Angle"), tr("Angle in degree"),30,-360,360,2, &ok);
+    if (ok ){
         try{
-            int angle = text.toInt()%360;
+            double angle = text;
             rotation += angle;
             QPixmap pixmap(*orgImage);
             QMatrix rm;
@@ -316,24 +316,6 @@ void MainWindow::rotate(void){
             ui->imageArea->setPixmap(pixmap);
             ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
             snapshot();
-
-//            QPixmap img("/Users/islamsalah/Desktop/build-ImageViewer-Desktop_Qt_5_7_0_clang_64bit-Debug/ImageViewer.app/Contents/MacOS/12065703_10207250130308111_2521342137978414620_n.jpg");
-//            QPixmap img2(img.size());
-
-//            QPainter p(&img2);
-//            p.setRenderHint(QPainter::Antialiasing);
-//            p.setRenderHint(QPainter::SmoothPixmapTransform);
-//            p.setRenderHint(QPainter::HighQualityAntialiasing);
-
-//            p.translate(img2.size().width()/2, img2.size().height()/2);
-//            p.rotate(angle);
-//            p.translate(-img2.size().width()/2, -img2.size().height()/2);
-
-//            p.drawPixmap(0, 0, img);
-//            p.end();
-//            ui->imageArea->clear();
-//            QApplication::processEvents();
-//            ui->imageArea->setPixmap(img2);
         }catch(std::exception &e){
             QMessageBox msgBox;
             msgBox.setText("Please Enter a Valid Angle.");
@@ -341,10 +323,6 @@ void MainWindow::rotate(void){
         }
     }else if (!ok){
         //do nothing
-    }else{
-        QMessageBox msgBox;
-        msgBox.setText("Please Enter a Valid Angle.");
-        msgBox.exec();
     }
 }
 
