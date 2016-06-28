@@ -55,6 +55,8 @@ private:
     bool isSaved = false;
     QPoint getInscribedPoint(QPoint );
 
+    void enterFunction();
+    void exitFunction();
 public slots:
     void open(void);
     void save(void);
