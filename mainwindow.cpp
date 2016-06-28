@@ -139,7 +139,6 @@ void MainWindow::normalSize(void){
 void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
-    enterFunction();
     int width = ui->imageArea->width();
     int height = ui->imageArea->height();
 
@@ -152,14 +151,12 @@ void MainWindow::zoomIn(void){
         scaleImage(ZOOM_FACTOR);
         snapshot();
     }
-    exitFunction();
 
 }
 
 void MainWindow::zoomOut(void){
     if(!isImageLoaded())
         return;
-    enterFunction();
     int width = ui->imageArea->width();
     int height = ui->imageArea->height();
 
@@ -168,16 +165,18 @@ void MainWindow::zoomOut(void){
         scaleImage(1/ZOOM_FACTOR);
         snapshot();
     }
-    exitFunction();
 }
 void MainWindow::scaleImage(double scale)
 {
+    enterFunction();
+
     scaleFactor *= scale;
     ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
     adjustScrollBar(scrollArea->horizontalScrollBar(), scale);
     adjustScrollBar(scrollArea->verticalScrollBar(), scale);
     rubberBand->hide();
 
+    exitFunction();
 }
 
 void MainWindow::snapshot(){ //collect a snapshot of current picture for later undo/redo
@@ -599,12 +598,15 @@ void MainWindow::on_actionAdjust_size_triggered()
 
 void MainWindow::enterFunction(){
 //    this->setWindowTitle(tr("loading"));
+    QApplication::processEvents();
     QApplication::setOverrideCursor(Qt::WaitCursor);
+    QApplication::processEvents();
 //    this->setCursor(Qt::BusyCursor);
 }
 
 void MainWindow::exitFunction(){
 //    this->setWindowTitle(tr("Image Viewer"));
     QApplication::setOverrideCursor(Qt::ArrowCursor);
+    QApplication::processEvents();
 //    this->setCursor(Qt::ArrowCursor);
 }
