@@ -78,6 +78,7 @@ void MainWindow::save(void){
         msg.exec();
         return;
     }
+    enterFunction();
     rubberBand->hide();
     QString imagePath = QFileDialog::getSaveFileName(this,tr("Save File"),"",tr("JPEG (*.jpg *.jpeg);;PNG (*.png);;BMP (*.bmp)"));
 
@@ -89,9 +90,11 @@ void MainWindow::save(void){
     }else{
         isSaved = true;
     }
+    exitFunction();
 }
 
 bool MainWindow::loadFile(const QString &fileName){
+    enterFunction();
     QImageReader reader(fileName);
     reader.setAutoTransform(true);
     const QImage image = reader.read();
@@ -99,35 +102,41 @@ bool MainWindow::loadFile(const QString &fileName){
         setWindowFilePath(QString());
         ui->imageArea->setPixmap(QPixmap());
         ui->imageArea->adjustSize();
+        exitFunction();
         return false;
     }
     scaleFactor = 1;
     ui->imageArea->setPixmap(QPixmap::fromImage(image));
     ui->imageArea->adjustSize();
     setWindowFilePath(fileName);
+    exitFunction();
     return true;
 }
 
 void MainWindow::fitToWindow(void){
+    enterFunction();
     if(!isImageLoaded())
         return;
     double sx = 1.0*ui->imageArea->height()/(this->height()-44), sy = 1.0*ui->imageArea->width()/this->width();
     sx = (sx > sy? sx: sy);
     scaleImage(1.0/sx);
     snapshot();
+    exitFunction();
 }
 
 void MainWindow::normalSize(void){
     if(!isImageLoaded())
         return;
+    enterFunction();
     scaleImage(1/scaleFactor);
     snapshot();
+    exitFunction();
 }
 
 void MainWindow::zoomIn(void){
     if(!isImageLoaded())
         return;
-
+    enterFunction();
     int width = ui->imageArea->width();
     int height = ui->imageArea->height();
 
@@ -140,13 +149,14 @@ void MainWindow::zoomIn(void){
         scaleImage(ZOOM_FACTOR);
         snapshot();
     }
+    exitFunction();
 
 }
 
 void MainWindow::zoomOut(void){
     if(!isImageLoaded())
         return;
-
+    enterFunction();
     int width = ui->imageArea->width();
     int height = ui->imageArea->height();
 
@@ -155,6 +165,7 @@ void MainWindow::zoomOut(void){
         scaleImage(1/ZOOM_FACTOR);
         snapshot();
     }
+    exitFunction();
 }
 void MainWindow::scaleImage(double scale)
 {
@@ -248,6 +259,7 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor){
 
 
 void MainWindow::undo(void){
+    enterFunction();
     if(stack1.size()>1){
         stack2.push(stack1.pop());
         ui->imageArea->setPixmap(stack1.top().pix);
@@ -258,8 +270,10 @@ void MainWindow::undo(void){
         }
     }
     rubberBand->hide();
+    exitFunction();
 }
 void MainWindow::redo(void){
+    enterFunction();
     if(stack2.size()>0){
         stack1.push(stack2.pop());
         ui->imageArea->setPixmap(stack1.top().pix);
@@ -270,6 +284,7 @@ void MainWindow::redo(void){
         }
     }
     rubberBand->hide();
+    exitFunction();
 }
 
 void MainWindow::closeFile(void){
@@ -278,14 +293,17 @@ void MainWindow::closeFile(void){
         if(!checkSave())
             return;
     }
+    enterFunction();
     ui->imageArea->setPixmap(QPixmap());
     ui->imageArea->setFrameStyle(QFrame::NoFrame); //remove frame
     scaleImage(1/scaleFactor);
     rubberBand->hide();
     snapshot();
+    exitFunction();
 }
 
 void MainWindow::reset(void){
+    enterFunction();
     stack2.clear();
     while(stack1.size()>1){
        stack1.pop();
@@ -297,6 +315,7 @@ void MainWindow::reset(void){
         zoomToRegion(stack1.top().rectangle,true);
     }
     rubberBand->hide();
+    exitFunction();
 }
 
 bool valid_input(QString s){
@@ -311,6 +330,7 @@ void MainWindow::rotate(void){
         msg.exec();
         return;
     }
+    enterFunction();
     rubberBand->hide();
     bool ok;
     double text = QInputDialog::getDouble(this, tr("Angle"), tr("Angle in degree"),30,-360,360,2, &ok);
@@ -335,6 +355,7 @@ void MainWindow::rotate(void){
     }else if (!ok){
         //do nothing
     }
+    exitFunction();
 }
 
 void MainWindow::crop(void){
@@ -345,11 +366,13 @@ void MainWindow::crop(void){
         return;
     }
     if(rubberBand->isVisible()){
+        enterFunction();
         rubberBand->hide();
         QPixmap pix = ui->imageArea->pixmap()->copy(getSelectedRegOnImg());
         ui->imageArea->setPixmap(pix);
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
         snapshot();
+        exitFunction();
     }
 }
 
@@ -411,6 +434,7 @@ QRect MainWindow::getSelectedRegOnImg()
 
 void MainWindow::zoomToRegion(QRect rec,bool undoing)
 {
+    enterFunction();
     //scale to required region
     double s;
     if(rec.width() > rec.height()){
@@ -441,6 +465,7 @@ void MainWindow::zoomToRegion(QRect rec,bool undoing)
         // scroll to make required place centred on small dimension
     scrollArea->horizontalScrollBar()->setValue(rec.x()*scaleFactor);
     scrollArea->verticalScrollBar()->setValue(rec.y()*scaleFactor);
+    exitFunction();
 }
 
 void MainWindow::centeredRect(QRect *rec)
@@ -567,4 +592,14 @@ void MainWindow::on_actionAdjust_size_triggered()
     QPixmap pix = ui->imageArea->pixmap()->scaled(width, height, isProp? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio);
     ui->imageArea->setPixmap(pix);
     scaleImage(1);
+}
+
+void MainWindow::enterFunction(){
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+//    this->setCursor(Qt::BusyCursor);
+}
+
+void MainWindow::exitFunction(){
+    QApplication::setOverrideCursor(Qt::ArrowCursor);
+//    this->setCursor(Qt::ArrowCursor);
 }

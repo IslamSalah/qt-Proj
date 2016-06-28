@@ -53,6 +53,8 @@ private:
     const double ZOOM_FACTOR = 1.25;
     bool isSaved = false;
 
+    void enterFunction();
+    void exitFunction();
 public slots:
     void open(void);
     void save(void);
