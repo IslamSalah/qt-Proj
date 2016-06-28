@@ -71,6 +71,7 @@ void MainWindow::open(void){
     stack2.clear();
     snapshot();
 }
+
 void MainWindow::save(void){
     if(ui->imageArea->pixmap() == NULL){
         QMessageBox msg;
@@ -131,11 +132,12 @@ void MainWindow::zoomIn(void){
     int width = ui->imageArea->width();
     int height = ui->imageArea->height();
 
+
     if(rubberBand->isVisible()){ // zoom to specified region
         zoomToRegion(getSelectedRegOnImg(),false);
 
     }
-    else if(width*height < MAX_IMG_AREA){ // normal zoomIn
+    else if(width*height*ZOOM_FACTOR*ZOOM_FACTOR < MAX_IMG_AREA){ // normal zoomIn
         //check if the picture is zoomed enough.
         scaleImage(ZOOM_FACTOR);
         snapshot();
@@ -421,11 +423,14 @@ void MainWindow::zoomToRegion(QRect rec,bool undoing)
         s*= 1.0*rec.height()/ui->imageArea->pixmap()->height();
     }
     if(!undoing){   //if doing the actual zooming , not undo/redo
-        //check scale boundries
-        if(scaleFactor/s < 7.5)     // can zoom to selected region
+        //check scale boundriesint width = ui->imageArea->width();
+        int width = ui->imageArea->width();
+        int height = ui->imageArea->height();
+
+        if(width*height/(s*s) < MAX_IMG_AREA)     // can zoom to selected region
                 scaleImage(1/s);
         else                      // can't, so zoom as much as you can
-            scaleImage(7.5/scaleFactor);
+            scaleImage(sqrt(MAX_IMG_AREA/(width*height)));
 
         //take a shot for undo/redo with true value as we need the rubberband rectangle
         snapshot();
@@ -465,7 +470,7 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
 }
 
 
-QPoint MainWindow::get_inscribed_point(QPoint current_point){
+QPoint MainWindow::getInscribedPoint(QPoint current_point){
     int x1 = ui->imageArea->pos().x();
     int y1 = ui->imageArea->pos().y()+44;
 
@@ -493,7 +498,7 @@ QPoint MainWindow::get_inscribed_point(QPoint current_point){
 
 void MainWindow::mouseMoveEvent(QMouseEvent *e)
 {
-    QPoint point = get_inscribed_point(e->pos());
+    QPoint point = getInscribedPoint(e->pos());
 
     rubberBand->setGeometry(QRect(origin, point).normalized());
     end = point;
@@ -512,7 +517,7 @@ void MainWindow::wheelEvent(QWheelEvent *)
     rubberBand->hide();
 }
 
-bool MainWindow::read_dimentions(int *width, int *height, int *unit_type, bool *isProp)
+bool MainWindow::readDimentions(int *width, int *height, int *unit_type, bool *isProp)
 {
     QDialog *d = new QDialog();
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -580,7 +585,7 @@ void MainWindow::on_actionAdjust_size_triggered()
     int width, height, unit_type;
     bool isProp;
 
-    if(!read_dimentions(&width, &height, &unit_type, &isProp))
+    if(!readDimentions(&width, &height, &unit_type, &isProp))
         return;
 
     int valid_size[] = {(int)qSqrt(MAX_IMG_AREA), 100};

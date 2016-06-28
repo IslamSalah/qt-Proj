@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QCloseEvent>
 #include <QRubberBand>
+#include <QLineEdit>
 #include <QStack>
 
 namespace Ui {
@@ -40,7 +41,7 @@ private:
     void zoomToRegion(QRect rec,bool undoing);
     void centeredRect(QRect *rec);
     void snapshot();
-    bool read_dimentions(int *, int *, int *, bool *);
+    bool readDimentions(int *, int *, int *, bool *);
     struct screenshot{
         QPixmap pix;
         QRect rectangle;
@@ -52,7 +53,7 @@ private:
     const int MIN_IMG_AREA = 10;
     const double ZOOM_FACTOR = 1.25;
     bool isSaved = false;
-    QPoint get_inscribed_point(QPoint );
+    QPoint getInscribedPoint(QPoint );
 
 public slots:
     void open(void);
