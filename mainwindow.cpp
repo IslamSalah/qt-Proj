@@ -40,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->toolBar->setMovable(false);     //to avoid out of sync. rubberband
     rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
 
+    this->setWindowTitle(tr("Image Viewer"));
+
+
 }
 
 MainWindow::~MainWindow()
@@ -595,11 +598,13 @@ void MainWindow::on_actionAdjust_size_triggered()
 }
 
 void MainWindow::enterFunction(){
+//    this->setWindowTitle(tr("loading"));
     QApplication::setOverrideCursor(Qt::WaitCursor);
 //    this->setCursor(Qt::BusyCursor);
 }
 
 void MainWindow::exitFunction(){
+//    this->setWindowTitle(tr("Image Viewer"));
     QApplication::setOverrideCursor(Qt::ArrowCursor);
 //    this->setCursor(Qt::ArrowCursor);
 }
