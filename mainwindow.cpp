@@ -316,6 +316,7 @@ void MainWindow::undo(void){
     }
     undoing=true;
     // put orgimage to screen
+    rotateOrgImage = new QPixmap(*orgImage);
     ui->imageArea->setPixmap(*orgImage);
     scaleFactor=1;
     ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
@@ -340,6 +341,7 @@ void MainWindow::redo(void){
         ui->imageArea->setPixmap(*orgImage);
         scaleFactor=1;
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+        rotateOrgImage = new QPixmap(*orgImage);
         rotation =0;
         //and do all operations on stack1
         doStack1();
