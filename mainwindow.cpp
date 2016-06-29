@@ -308,6 +308,7 @@ void MainWindow::doStack1(){
 }
 
 void MainWindow::undo(void){
+    isSaved = false;
     ui->imageArea->setVisible(false);
     enterFunction();
     if(stack1.size()>0){
@@ -328,6 +329,7 @@ void MainWindow::undo(void){
     ui->imageArea->setVisible(true);
 }
 void MainWindow::redo(void){
+    isSaved = false;
     ui->imageArea->setVisible(false);
     enterFunction();
     if(stack2.size()>0){
@@ -452,11 +454,11 @@ void MainWindow::crop(void){
         QPixmap pix = ui->imageArea->pixmap()->copy(currRect);
         ui->imageArea->setPixmap(pix);
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-        rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
-        rotation = 0.0;
+
         if(!undoing)
             snapshot("crop", currRect, 0);
-
+        rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
+        rotation = 0.0;
         exitFunction();
     }
 }
