@@ -25,7 +25,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *);
 private:
-    QPixmap * orgImage;
+    QPixmap * orgImage, * rotateOrgImage;
     Ui::MainWindow *ui;
     QLabel * imageArea;
     QScrollArea * scrollArea;

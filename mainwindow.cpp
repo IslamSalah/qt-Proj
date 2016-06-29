@@ -71,6 +71,7 @@ void MainWindow::open(void){
     ui->imageArea->setFrameStyle(QFrame::Box);
 
     orgImage = new QPixmap(*ui->imageArea->pixmap());
+    rotateOrgImage = new QPixmap(* orgImage);
     stack1.clear();
     stack2.clear();
 }
@@ -307,6 +308,7 @@ void MainWindow::doStack1(){
 }
 
 void MainWindow::undo(void){
+    ui->imageArea->setVisible(false);
     enterFunction();
     if(stack1.size()>0){
         stack2.push(stack1.pop());
@@ -323,8 +325,10 @@ void MainWindow::undo(void){
     rubberBand->hide();
     undoing=false;
     exitFunction();
+    ui->imageArea->setVisible(true);
 }
 void MainWindow::redo(void){
+    ui->imageArea->setVisible(false);
     enterFunction();
     if(stack2.size()>0){
         stack1.push(stack2.pop());
@@ -344,6 +348,7 @@ void MainWindow::redo(void){
     
     rubberBand->hide();
     exitFunction();
+    ui->imageArea->setVisible(true);
 }
 
 void MainWindow::closeFile(void){
@@ -353,6 +358,7 @@ void MainWindow::closeFile(void){
             return;
     }
     enterFunction();
+    rotateOrgImage = new QPixmap();
     ui->imageArea->setPixmap(QPixmap());
     ui->imageArea->setFrameStyle(QFrame::NoFrame); //remove frame
     scaleImage(1/scaleFactor);
@@ -369,6 +375,7 @@ void MainWindow::reset(void){
     stack2.clear();
     stack1.clear();
     ui->imageArea->setPixmap(*orgImage);
+    rotateOrgImage = new QPixmap(*orgImage);
     scaleFactor=1;
     ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
     rotation =0;
@@ -406,7 +413,7 @@ void MainWindow::rotate(void){
             rotation += angle;
 //            rotation =rotation - 360/(int)rotation * (int) rotation; //mod like op
             rotation = rotation - (int)rotation/360 * 360; //mod like op
-            QPixmap pixmap(*orgImage);
+            QPixmap pixmap(*rotateOrgImage);
             QMatrix rm;
             rm.rotate(rotation);
             pixmap = pixmap.transformed(rm);
@@ -445,6 +452,8 @@ void MainWindow::crop(void){
         QPixmap pix = ui->imageArea->pixmap()->copy(currRect);
         ui->imageArea->setPixmap(pix);
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+        rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
+        rotation = 0.0;
         if(!undoing)
             snapshot("crop", currRect, 0);
 
@@ -713,6 +722,8 @@ void MainWindow::on_actionAdjust_size_triggered()
         stack1.top().unit_type=unit_type;
         stack1.top().isProp=isProp;
     }
+    rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
+    rotation = 0;
 }
 
 void MainWindow::enterFunction(){
