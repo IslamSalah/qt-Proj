@@ -305,6 +305,7 @@ void MainWindow::doStack1(){
 
         stack1.push(temp.pop());
     }
+
 }
 
 void MainWindow::undo(void){
@@ -313,6 +314,10 @@ void MainWindow::undo(void){
     enterFunction();
     if(stack1.size()>0){
         stack2.push(stack1.pop());
+        if(QString::compare(stack2.top().operation, "close file", Qt::CaseInsensitive)==0){
+            //file was closed and undo issued, restore border
+            ui->imageArea->setFrameStyle(QFrame::Box);
+        }
     }
     undoing=true;
     // put orgimage to screen
@@ -474,7 +479,7 @@ void MainWindow::exit(void){
 }
 
 bool MainWindow::isNeedSave(void){
-    return stack1.size()>1 && isImageLoaded() && !isSaved;
+    return stack1.size()>0 && isImageLoaded() && !isSaved;
 }
 
 bool MainWindow::checkSave(void){
