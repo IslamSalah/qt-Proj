@@ -16,6 +16,7 @@
 #include <QDebug>
 #include <QPainter>
 #include <QtMath>
+#include <QString>
 
 #include <iostream>
 MainWindow::MainWindow(QWidget *parent) :
@@ -70,9 +71,9 @@ void MainWindow::open(void){
     ui->imageArea->setFrameStyle(QFrame::Box);
 
     orgImage = new QPixmap(*ui->imageArea->pixmap());
+    rotateOrgImage = new QPixmap(* orgImage);
     stack1.clear();
     stack2.clear();
-    snapshot();
 }
 
 void MainWindow::save(void){
@@ -124,7 +125,10 @@ void MainWindow::fitToWindow(void){
     double sx = 1.0*ui->imageArea->height()/(this->height()-44), sy = 1.0*ui->imageArea->width()/this->width();
     sx = (sx > sy? sx: sy);
     scaleImage(1.0/sx);
-    snapshot();
+    if(!undoing){
+        QRect rec;
+        snapshot("fit to window", rec, 0);
+    }
     exitFunction();
 }
 
@@ -133,7 +137,10 @@ void MainWindow::normalSize(void){
         return;
     enterFunction();
     scaleImage(1/scaleFactor);
-    snapshot();
+    if(!undoing){
+        QRect rec;
+        snapshot("normal size", rec, 0);
+    }
     exitFunction();
 }
 
@@ -145,13 +152,16 @@ void MainWindow::zoomIn(void){
 
 
     if(rubberBand->isVisible()){ // zoom to specified region
-        zoomToRegion(getSelectedRegOnImg(),false);
+        zoomToRegion(getSelectedRegOnImg());
 
     }
     else if(width*height*ZOOM_FACTOR*ZOOM_FACTOR < MAX_IMG_AREA){ // normal zoomIn
         //check if the picture is zoomed enough.
         scaleImage(ZOOM_FACTOR);
-        snapshot();
+        if(!undoing){
+            QRect rec;
+            snapshot("zoom in", rec, 0);
+        }
     }
 
 }
@@ -165,7 +175,10 @@ void MainWindow::zoomOut(void){
     if(width*height > MIN_IMG_AREA){
         //check if the picture is zoomed enough.
         scaleImage(1/ZOOM_FACTOR);
-        snapshot();
+        if(!undoing){
+            QRect rec;
+            snapshot("zoom out", rec, 0);
+        }
     }
 }
 void MainWindow::scaleImage(double scale)
@@ -181,24 +194,16 @@ void MainWindow::scaleImage(double scale)
     exitFunction();
 }
 
-void MainWindow::snapshot(){ //collect a snapshot of current picture for later undo/redo
+void MainWindow::snapshot(QString operation, QRect rectangle, double angle){ //collect a snapshot of current picture for later undo/redo
     stack2.clear();
     screenshot shot;
-    shot.pix = *ui->imageArea->pixmap();
-    shot.scale=scaleFactor;
-    shot.need_rectangle=false;
+    shot.operation = operation;
+    shot.rectangle = rectangle;
+    shot.angle = angle;
     stack1.push(shot);
 
     //new things has been done to image, it needs to be saved
     isSaved = false;
-
-    if(stack1.size()>20){
-        while(stack1.size()>2)
-            stack2.push(stack1.pop());
-        stack1.pop();
-        while(!stack2.isEmpty())
-            stack1.push(stack2.pop());
-    }
 }
 
 void MainWindow::connectActions(void){
@@ -230,6 +235,7 @@ void MainWindow::connectActions(void){
 
     //crop
     action = ui->actionCrop;
+    QRect rec;
     connect(action,SIGNAL(triggered()), this,SLOT(crop()));
 
     //rotate
@@ -261,34 +267,97 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor){
                             + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
+void MainWindow::doStack1(){
+    while(stack1.size()>0){
+        temp.push(stack1.pop());
+    }
+
+    while(temp.size()>0){
+        if(QString::compare(temp.top().operation, "fit to window", Qt::CaseInsensitive)==0){
+            fitToWindow();
+        }
+        else if(QString::compare(temp.top().operation, "normal size", Qt::CaseInsensitive)==0){
+            normalSize();
+        }
+        else if(QString::compare(temp.top().operation, "zoom in", Qt::CaseInsensitive)==0){
+            zoomIn();
+        }
+        else if(QString::compare(temp.top().operation, "zoom out", Qt::CaseInsensitive)==0){
+            zoomOut();
+        }
+        else if(QString::compare(temp.top().operation, "close file", Qt::CaseInsensitive)==0){
+            closeFile();
+        }
+        else if(QString::compare(temp.top().operation, "rotate", Qt::CaseInsensitive)==0){
+            ang = temp.top().angle;
+            rotate();
+        }
+        else if(QString::compare(temp.top().operation, "crop", Qt::CaseInsensitive)==0){
+            rec = temp.top().rectangle;
+            crop();
+        }
+        else if(QString::compare(temp.top().operation, "zoom to region", Qt::CaseInsensitive)==0){
+            zoomToRegion(temp.top().rectangle);
+        }
+        else if(QString::compare(temp.top().operation, "resize", Qt::CaseInsensitive)==0){
+            on_actionAdjust_size_triggered();
+        }
+
+        stack1.push(temp.pop());
+    }
+
+}
 
 void MainWindow::undo(void){
+    isSaved = false;
+    ui->imageArea->setVisible(false);
     enterFunction();
-    if(stack1.size()>1){
+    if(stack1.size()>0){
         stack2.push(stack1.pop());
-        ui->imageArea->setPixmap(stack1.top().pix);
-        scaleFactor=stack1.top().scale;
-        ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-        if(stack1.top().need_rectangle){
-            zoomToRegion(stack1.top().rectangle,true);
+        if(QString::compare(stack2.top().operation, "close file", Qt::CaseInsensitive)==0){
+            //file was closed and undo issued, restore border
+            ui->imageArea->setFrameStyle(QFrame::Box);
         }
     }
+    undoing=true;
+    // put orgimage to screen
+    rotateOrgImage = new QPixmap(*orgImage);
+    ui->imageArea->setPixmap(*orgImage);
+    scaleFactor=1;
+    ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
+    rotation =0;
+    //and do all operations on stack1
+    doStack1();
+    //
     rubberBand->hide();
+    undoing=false;
     exitFunction();
+    ui->imageArea->setVisible(true);
 }
 void MainWindow::redo(void){
+    isSaved = false;
+    ui->imageArea->setVisible(false);
     enterFunction();
     if(stack2.size()>0){
         stack1.push(stack2.pop());
-        ui->imageArea->setPixmap(stack1.top().pix);
-        scaleFactor=stack1.top().scale;
+
+        undoing=true;
+        // put orgimage to screen
+        ui->imageArea->setPixmap(*orgImage);
+        scaleFactor=1;
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-        if(stack1.top().need_rectangle){
-            zoomToRegion(stack1.top().rectangle,true);
-        }
+        rotateOrgImage = new QPixmap(*orgImage);
+        rotation =0;
+        //and do all operations on stack1
+        doStack1();
+        //
+        rubberBand->hide();
+        undoing=false;
     }
+    
     rubberBand->hide();
     exitFunction();
+    ui->imageArea->setVisible(true);
 }
 
 void MainWindow::closeFile(void){
@@ -298,26 +367,27 @@ void MainWindow::closeFile(void){
             return;
     }
     enterFunction();
+    rotateOrgImage = new QPixmap();
     ui->imageArea->setPixmap(QPixmap());
     ui->imageArea->setFrameStyle(QFrame::NoFrame); //remove frame
     scaleImage(1/scaleFactor);
     rubberBand->hide();
-    snapshot();
+    if(!undoing){
+        QRect rec;
+        snapshot("close file", rec, 0);
+    }
     exitFunction();
 }
 
 void MainWindow::reset(void){
     enterFunction();
     stack2.clear();
-    while(stack1.size()>1){
-       stack1.pop();
-    }
-    ui->imageArea->setPixmap(stack1.top().pix);
-    scaleFactor=stack1.top().scale;
+    stack1.clear();
+    ui->imageArea->setPixmap(*orgImage);
+    rotateOrgImage = new QPixmap(*orgImage);
+    scaleFactor=1;
     ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-    if(stack1.top().need_rectangle){
-        zoomToRegion(stack1.top().rectangle,true);
-    }
+    rotation =0;
     rubberBand->hide();
     exitFunction();
 }
@@ -336,21 +406,32 @@ void MainWindow::rotate(void){
     }
     enterFunction();
     rubberBand->hide();
-    bool ok;
-    double text = QInputDialog::getDouble(this, tr("Angle"), tr("Angle in degree"),30,-360,360,2, &ok);
-    if (ok ){
+    bool ok= false;
+    double text;
+    if(!undoing)
+        text = QInputDialog::getDouble(this, tr("Angle"), tr("Angle in degree"),30,-360,360,2, &ok);
+
+    if (ok || undoing){
         try{
-            double angle = text;
+            double angle;
+            if(!undoing)
+                angle=text;
+            else
+                angle=ang;
+
             rotation += angle;
 //            rotation =rotation - 360/(int)rotation * (int) rotation; //mod like op
             rotation = rotation - (int)rotation/360 * 360; //mod like op
-            QPixmap pixmap(*orgImage);
+            QPixmap pixmap(*rotateOrgImage);
             QMatrix rm;
             rm.rotate(rotation);
             pixmap = pixmap.transformed(rm);
             ui->imageArea->setPixmap(pixmap);
             ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-            snapshot();
+            if(!undoing){
+                QRect rec;
+                snapshot("rotate", rec, angle);
+            }
         }catch(std::exception &e){
             QMessageBox msgBox;
             msgBox.setText("Please Enter a Valid Angle.");
@@ -369,13 +450,22 @@ void MainWindow::crop(void){
         msg.exec();
         return;
     }
-    if(rubberBand->isVisible()){
+    if(rubberBand->isVisible() || undoing){
         enterFunction();
         rubberBand->hide();
-        QPixmap pix = ui->imageArea->pixmap()->copy(getSelectedRegOnImg());
+        QRect currRect ;
+        if(!undoing)
+            currRect = getSelectedRegOnImg();
+        else
+            currRect = rec;
+        QPixmap pix = ui->imageArea->pixmap()->copy(currRect);
         ui->imageArea->setPixmap(pix);
         ui->imageArea->resize(scaleFactor*ui->imageArea->pixmap()->size());
-        snapshot();
+
+        if(!undoing)
+            snapshot("crop", currRect, 0);
+        rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
+        rotation = 0.0;
         exitFunction();
     }
 }
@@ -389,7 +479,7 @@ void MainWindow::exit(void){
 }
 
 bool MainWindow::isNeedSave(void){
-    return stack1.size()>1 && isImageLoaded() && !isSaved;
+    return stack1.size()>0 && isImageLoaded() && !isSaved;
 }
 
 bool MainWindow::checkSave(void){
@@ -436,7 +526,7 @@ QRect MainWindow::getSelectedRegOnImg()
     return rect;
 }
 
-void MainWindow::zoomToRegion(QRect rec,bool undoing)
+void MainWindow::zoomToRegion(QRect rec)
 {
     enterFunction();
     //scale to required region
@@ -448,21 +538,17 @@ void MainWindow::zoomToRegion(QRect rec,bool undoing)
         s = 1.0*ui->imageArea->height()/(this->height()-10);
         s*= 1.0*rec.height()/ui->imageArea->pixmap()->height();
     }
-    if(!undoing){   //if doing the actual zooming , not undo/redo
-        //check scale boundriesint width = ui->imageArea->width();
-        int width = ui->imageArea->width();
-        int height = ui->imageArea->height();
+    //check scale boundriesint width = ui->imageArea->width();
+    int width = ui->imageArea->width();
+    int height = ui->imageArea->height();
 
-        if(width*height/(s*s) < MAX_IMG_AREA)     // can zoom to selected region
-                scaleImage(1/s);
-        else                      // can't, so zoom as much as you can
-            scaleImage(sqrt(MAX_IMG_AREA/(width*height)));
+    if(width*height/(s*s) < MAX_IMG_AREA)     // can zoom to selected region
+        scaleImage(1/s);
+    else                      // can't, so zoom as much as you can
+        scaleImage(sqrt(MAX_IMG_AREA/(width*height)));
 
-        //take a shot for undo/redo with true value as we need the rubberband rectangle
-        snapshot();
-        //setting the rectangle of the snapshot to be the current selected rectangle
-        stack1.top().rectangle=rec;
-        stack1.top().need_rectangle=true;
+    if(!undoing){
+        snapshot("zoom to region", rec, 0);
     }
     //scroll to required region
     centeredRect(&rec);
@@ -612,7 +698,13 @@ void MainWindow::on_actionAdjust_size_triggered()
     int width, height, unit_type;
     bool isProp;
 
-    if(!readDimentions(&width, &height, &unit_type, &isProp))
+    if(undoing){
+        width = temp.top().width;
+        height = temp.top().height;
+        unit_type = temp.top().unit_type;
+        isProp = temp.top().isProp;
+    }
+    else if(!readDimentions(&width, &height, &unit_type, &isProp))
         return;
 
     int valid_size[] = {(int)qSqrt(MAX_IMG_AREA), 100};
@@ -631,6 +723,16 @@ void MainWindow::on_actionAdjust_size_triggered()
     QPixmap pix = ui->imageArea->pixmap()->scaled(width, height, isProp? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio);
     ui->imageArea->setPixmap(pix);
     scaleImage(1);
+    QRect rec;
+    if(!undoing){
+        snapshot("resize", rec, 0);
+        stack1.top().width=width;
+        stack1.top().height=height;
+        stack1.top().unit_type=unit_type;
+        stack1.top().isProp=isProp;
+    }
+    rotateOrgImage = new QPixmap(* ui->imageArea->pixmap());
+    rotation = 0;
 }
 
 void MainWindow::enterFunction(){

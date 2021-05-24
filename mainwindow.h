@@ -8,6 +8,7 @@
 #include <QRubberBand>
 #include <QLineEdit>
 #include <QStack>
+#include <QString>
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +25,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *);
 private:
-    QPixmap * orgImage;
+    QPixmap * orgImage, * rotateOrgImage;
     Ui::MainWindow *ui;
     QLabel * imageArea;
     QScrollArea * scrollArea;
@@ -38,17 +39,23 @@ private:
     QPoint origin, end;
     QRubberBand *rubberBand;
     QRect getSelectedRegOnImg();
-    void zoomToRegion(QRect rec,bool undoing);
+    void zoomToRegion(QRect rec);
     void centeredRect(QRect *rec);
-    void snapshot();
+    void snapshot(QString operation, QRect rectangle, double angle);
+    void doStack1();
     bool readDimentions(int *, int *, int *, bool *);
     struct screenshot{
-        QPixmap pix;
+        QString operation;
         QRect rectangle;
-        bool need_rectangle;
-        double scale;
+        double angle;
+        int width, height, unit_type;
+        bool isProp;
     };
-    QStack<screenshot> stack1,stack2;
+    QStack<screenshot> stack1,stack2,temp;
+    double ang;
+    bool undoing=false;
+    QRect rec;
+
     const int MAX_IMG_AREA = 100000000;
     const int MIN_IMG_AREA = 10;
     const double ZOOM_FACTOR = 1.25;
